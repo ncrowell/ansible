@@ -468,10 +468,11 @@ def increment_debug(option, opt, value, parser):
     VERBOSITY += 1
 
 def base_parser(constants=C, usage="", output_opts=False, runas_opts=False,
-    async_opts=False, connect_opts=False, subset_opts=False, check_opts=False, diff_opts=False):
+    async_opts=False, connect_opts=False, subset_opts=False, check_opts=False,
+    diff_opts=False, complex_opts=False):
     ''' create an options parser for any ansible script '''
 
-    parser = SortedOptParser(usage, version=version("%prog"))
+    parser = SortedOptParser(usage, version=version("%prog"), option_class = JSONOptions)
     parser.add_option('-v','--verbose', default=False, action="callback",
         callback=increment_debug, help="verbose mode (-vvv for more)")
 
@@ -537,8 +538,36 @@ def base_parser(constants=C, usage="", output_opts=False, runas_opts=False,
             help="when changing (small) files and templates, show the differences in those files; works great with --check"
         )
 
-
     return parser
+
+def _check_json(option, opt, s):
+    try:
+        return json.loads(s)
+    except TypeError:
+        raise optparse.OptionValueError("Could not parse to json: %s" % s)
+
+def _check_yaml_file(option, opt, arg):
+    fname = arg
+    try:
+        f = open(fname)
+        try:
+            data = yaml.load(f.read())
+        finally:
+            f.close()
+    except yaml.YAMLError:
+        raise optparse.OptionValueError("Could not parse %s to data." % fname)
+
+    if not isinstance(data, dict):
+        raise optparse.OptionValueError("Complex args must be a dict, got %s" % data)
+
+    return data
+
+class JSONOptions(optparse.Option):
+    TYPES = optparse.Option.TYPES + ("json", "yaml_file")
+    TYPE_CHECKER = copy.copy(optparse.Option.TYPE_CHECKER)
+    TYPE_CHECKER['json']      = _check_json
+    TYPE_CHECKER['yaml_file'] = _check_yaml_file
+
 
 def ask_passwords(ask_pass=False, ask_sudo_pass=False):
     sshpass = None

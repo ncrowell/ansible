@@ -60,9 +60,15 @@ class Cli(object):
         parser.add_option('-m', '--module-name', dest='module_name',
             help="module name to execute (default=%s)" % C.DEFAULT_MODULE_NAME,
             default=C.DEFAULT_MODULE_NAME)
+        parser.add_option('-A', '--complex-args', dest='complex_args',
+                help="json-formatted complex args string", type='json', default=dict())
+        parser.add_option('-Y', '--complex-args-file', dest='complex_args_file',
+                help="yaml-formatted file for complex args", type='yaml_file',
+                default=None)
 
         options, args = parser.parse_args()
         self.callbacks.options = options
+
 
         if len(args) == 0 or len(args) > 1:
             parser.print_help()
@@ -105,9 +111,14 @@ class Cli(object):
         if options.tree:
             utils.prepare_writeable_dir(options.tree)
 
+        if options.complex_args_file:
+            # Arguments from the command line override arguments from a file
+            options.complex_args_file.update(options.complex_args)
+            options.complex_args = options.complex_args_file
+
         runner = Runner(
             module_name=options.module_name, module_path=options.module_path,
-            module_args=options.module_args,
+            module_args=options.module_args, complex_args=options.complex_args,
             remote_user=options.remote_user, remote_pass=sshpass,
             inventory=inventory_manager, timeout=options.timeout,
             private_key_file=options.private_key_file,

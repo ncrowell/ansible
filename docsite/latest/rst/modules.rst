@@ -24,6 +24,17 @@ Each module supports taking arguments.  Nearly all modules take ``key=value``
 arguments, space delimited.  Some modules take no arguments, and the
 command/shell modules simply take the string of the command you want to run.
 
+You can also supply JSON-formatted arguments from the command-line with::
+
+   ansible webservers -m json-arg-command -A '{"arg1": ["whatever"]}'
+
+Similarly, arguments from a YAML-formatted file will be converted to JSON with::
+
+   ansible webservers -m json-arg-command -Y args.yml
+
+Command-line JSON argument values have priority over same-keyed arguments from
+YAML files.
+
 From playbooks, Ansible modules are executed in a very similar way::
 
     - name: reboot the servers

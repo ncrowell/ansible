@@ -37,6 +37,8 @@ import ansible.utils as utils
 import ansible.module_common as module_common
 import ansible.constants as C
 
+from ansible.utils import JSONOptions
+
 try:
     import json
 except ImportError:
@@ -46,7 +48,7 @@ def parse():
     """parse command line
 
     :return : (options, args)"""
-    parser = optparse.OptionParser()
+    parser = optparse.OptionParser(option_class = JSONOptions)
 
     parser.usage = "%prog -[options] (-h for help)"
 
@@ -56,7 +58,19 @@ def parse():
         help="module argument string")
     parser.add_option('-D', '--debugger', dest='debugger', 
         help="path to python debugger (e.g. /usr/bin/pdb)")
+    parser.add_option('-A', '--complex-args', dest='complex_args',
+        help="json-formatted complex args string", type='json', default=dict())
+    parser.add_option('-C', '--complex-args-file', dest='complex_args_loaded',
+        help="yaml-formatted file for complex args", type='yaml_file',
+        default=dict())
+
     options, args = parser.parse_args()
+
+    # command-line json has priority over json loaded from a file
+    complex_args = options.complex_args_loaded
+    complex_args.update(options.complex_args)
+    options.complex_args = complex_args
+
     if not options.module_path:
         parser.print_help()
         sys.exit(1)
@@ -74,7 +88,7 @@ def write_argsfile(argstring, json=False):
     argsfile.close()
     return argspath
 
-def boilerplate_module(modfile, args):
+def boilerplate_module(modfile, args, complex_args='{}'):
     """ simulate what ansible does with new style modules """
 
     module_fh = open(modfile)
@@ -88,10 +102,10 @@ def boilerplate_module(modfile, args):
         encoded_args = repr(str(args))
         module_data = module_data.replace(module_common.REPLACER_ARGS, encoded_args)
         encoded_lang = repr(C.DEFAULT_MODULE_LANG)
-        empty_complex = repr("{}")
+        complex_str = repr(complex_args)
         module_data = module_data.replace(module_common.REPLACER_LANG, encoded_lang)
         module_data = module_data.replace('syslog.LOG_USER', "syslog.%s" % C.DEFAULT_SYSLOG_FACILITY)
-        module_data = module_data.replace(module_common.REPLACER_COMPLEX, empty_complex)
+        module_data = module_data.replace(module_common.REPLACER_COMPLEX, complex_str)
 
         modfile2_path = os.path.expanduser("~/.ansible_module_generated")
         print "* including generated source, if any, saving to: %s" % modfile2_path
@@ -148,10 +162,18 @@ def rundebug(debugger, modfile, argspath):
     else:
         subprocess.call("%s %s" % (debugger, modfile), shell=True)
 
+
+# these aren't really useful outside of an optparse.Option instance
+
+
 def main(): 
 
     options, args = parse()
-    (modfile, is_new_style, old_style_but_json) = boilerplate_module(options.module_path, options.module_args)
+    (modfile, is_new_style, old_style_but_json) = boilerplate_module(
+        options.module_path,
+        options.module_args,
+        json.dumps(options.complex_args)
+     )
 
     argspath=None
     if not is_new_style:
@@ -166,5 +188,4 @@ def main():
 	
 if __name__ == "__main__":
     main()
-
 
