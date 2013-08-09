@@ -295,7 +295,7 @@ def legacy_varReplace(basedir, raw, vars, lookup_fatal=True, depth=0, expand_lis
 
 # TODO: varname is misnamed here
 
-def template(basedir, varname, vars, lookup_fatal=True, depth=0, expand_lists=True, convert_bare=False, fail_on_undefined=False, filter_fatal=True):
+def template(basedir, varname, vars, lookup_fatal=True, depth=0, expand_lists=True, convert_bare=False, fail_on_undefined=True, filter_fatal=True):
     ''' templates a data structure by traversing it and substituting for other data structures '''
 
     try:
@@ -474,7 +474,7 @@ def template_from_file(basedir, path, vars):
         res = res + '\n'
     return template(basedir, res, vars)
 
-def template_from_string(basedir, data, vars, fail_on_undefined=False):
+def template_from_string(basedir, data, vars, fail_on_undefined=True):
     ''' run a string through the (Jinja2) templating engine '''
 
     try:
