@@ -430,10 +430,13 @@ class Runner(object):
             items_terms = self.module_vars.get('items_lookup_terms', '')
             items_terms = template.template(basedir, items_terms, inject)
             items = utils.plugins.lookup_loader.get(items_plugin, runner=self, basedir=basedir).run(items_terms, inject=inject)
-            if type(items) != list:
-                raise errors.AnsibleError("lookup plugins have to return a list: %r" % items)
 
-            if len(items) and utils.is_list_of_strings(items) and self.module_name in [ 'apt', 'yum', 'pkgng' ]:
+            if 'inventory_hostname' in items_plugin and isinstance(items, (list, dict)):
+                inject['item'] = items
+                items = None
+            elif type(items) != list:
+                raise errors.AnsibleError("lookup plugins have to return a list: %r" % items)
+            elif len(items) and utils.is_list_of_strings(items) and self.module_name in [ 'apt', 'yum', 'pkgng' ]:
                 # hack for apt, yum, and pkgng so that with_items maps back into a single module call
                 inject['item'] = ",".join(items)
                 items = None
