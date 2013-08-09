@@ -27,7 +27,6 @@ import shlex
 import collections
 from play import Play
 import StringIO
-import pipes
 
 SETUP_CACHE = collections.defaultdict(dict)
 
@@ -335,10 +334,17 @@ class PlayBook(object):
         ansible.callbacks.set_task(self.callbacks, task)
         ansible.callbacks.set_task(self.runner_callbacks, task)
 
-        self.callbacks.on_task_start(template(play.basedir, task.name, task.module_vars, lookup_fatal=False, filter_fatal=False), is_handler)
-        if hasattr(self.callbacks, 'skip_task') and self.callbacks.skip_task:
+        task_name = template(play.basedir, task.name, task.module_vars, lookup_fatal=False, filter_fatal=False)
+
+        def _run_task_end(task_results, skipped=False):
+            print("ending the running of a task")
+            self.runner_callbacks.on_task_end(task_name, task_results, skipped)
             ansible.callbacks.set_task(self.callbacks, None)
             ansible.callbacks.set_task(self.runner_callbacks, None)
+
+        self.callbacks.on_task_start(task_name, is_handler)
+        if hasattr(self.callbacks, 'skip_task') and self.callbacks.skip_task:
+            _run_task_end(None, skipped=True)
             return True
 
         # load up an appropriate ansible runner to run the task in parallel
@@ -379,8 +385,7 @@ class PlayBook(object):
                     for handler_name in task.notify:
                         self._flag_handler(play, template(play.basedir, handler_name, task.module_vars), host)
 
-        ansible.callbacks.set_task(self.callbacks, None)
-        ansible.callbacks.set_task(self.runner_callbacks, None)
+        _run_task_end(results)
         return hosts_remaining
 
     # *****************************************************
