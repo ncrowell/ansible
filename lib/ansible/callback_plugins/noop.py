@@ -72,6 +72,9 @@ class CallbackModule(object):
     def playbook_on_task_start(self, name, is_conditional):
         pass
 
+    def playbook_on_task_end(self, name, results, skipped):
+        pass
+
     def playbook_on_vars_prompt(self, varname, private=True, prompt=None, encrypt=None, confirm=False, salt_size=None, salt=None, default=None):
         pass
 
