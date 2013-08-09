@@ -281,6 +281,8 @@ def command_generic_msg(hostname, result, oneline, caption):
 def host_report_msg(hostname, module_name, result, oneline):
     ''' summarize the JSON results for a particular host '''
 
+
+    oneline = True
     failed = utils.is_failed(result)
     msg = ('', None)
     if module_name in [ 'command', 'shell', 'raw' ] and 'ansible_job_id' not in result and result.get('parsed',True) != False:
@@ -443,9 +445,9 @@ class PlaybookRunnerCallbacks(DefaultRunnerCallbacks):
         returned_msg = results2.pop('msg', None)
 
         if item:
-            msg = "failed: [%s] => (item=%s) => %s" % (host, item, utils.jsonify(results2))
+            msg = "failed: [%s] => (item=%s) => %s" % (host, item, utils.jsonify(results2, format=True))
         else:
-            msg = "failed: [%s] => %s" % (host, utils.jsonify(results2))
+            msg = "failed: [%s] => %s" % (host, utils.jsonify(results2, format=True))
         display(msg, color='red', runner=self.runner)
 
         if stderr:
